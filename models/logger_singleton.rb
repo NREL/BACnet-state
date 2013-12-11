@@ -4,7 +4,7 @@ class LoggerSingleton
   
   def self.logger
     if @@logger.nil?
-      @@logger = Logger.new("ruby_log.log")
+      @@logger = Logger.new("logs/ruby_log.log")
     end
     @@logger
   end
