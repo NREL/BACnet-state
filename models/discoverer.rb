@@ -1,3 +1,10 @@
+# explicit java_import required?
+java_import 'java.util.concurrent.Executors'
+java_import 'java.util.concurrent.ScheduledExecutorService'
+java_import 'java.util.concurrent.ScheduledFuture'
+java_import 'java.util.concurrent.TimeUnit'
+
+
 class Discoverer 
   # initially we will just do this single-threaded.  it probably isn't that slow.  
   # do we want to just leave listener running?
@@ -6,12 +13,21 @@ class Discoverer
   # other todos: add discoveryManager to control access.
 
   # localdevice is initialized and configured in the bacnet#initialize method.  let's leave that class alone for now.
+
+
   @broadcast_timer = nil
 
   def initialize(min_id, max_id, local_device)
     @min = min_id
     @max = max_id
     @local_device = local_device
+
+  end
+
+  def schedule_broadcast(step = 100, interval_in_secs = 1)
+    broadcaster = Broadcaster.new(@min, @max, @local_device, step, interval_in_secs)
+    exec = Executors.newScheduledThreadPool(1)
+    exec.scheduleAtFixedRate(broadcaster, 0, 1, TimeUnit::SECONDS)
   end
 
   def valid?
@@ -27,19 +43,20 @@ class Discoverer
   end
 
   # todo control access to trigger broadcast 
-  def broadcastWhoIs step = 100, interval = 1
+  # def broadcastWhoIs step = 100, interval = 1
+  #   exec = Executors.newScheduledThreadPool(1)
+  #   exec.scheduleAtFixedRate(Broadcast.new, )
+  #   # Executors.newScheduledThreadPool(1).scheduleAtFixedRate(self.broadcastOnInterval, 0, 1, TimeUnit::SECONDS)
 
-    # Executors.newScheduledThreadPool(1).scheduleAtFixedRate(self.broadcastOnInterval, 0, 1, TimeUnit::SECONDS)
+  #   # set eventhandler on localdevice to manage sensors reporting in
+  #   @local_device.getEventHandler().addListener(NewDeviceHandler.new);
 
-    # set eventhandler on localdevice to manage sensors reporting in
-    @local_device.getEventHandler().addListener(NewDeviceHandler.new);
+  #   # for now, broadcast over entire range 
+  #   whois = com.serotonin.bacnet4j.service.unconfirmed.WhoIsRequest.new(com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(@min), com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(@max))
 
-    # for now, broadcast over entire range 
-    whois = com.serotonin.bacnet4j.service.unconfirmed.WhoIsRequest.new(com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(@min), com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(@max))
-
-    @local_device.sendBroadcast(whois);
-    # schedule in steps of 100 
-    # broadcast on localdevice with min and max
-  end
+  #   @local_device.sendBroadcast(whois);
+  #   # schedule in steps of 100 
+  #   # broadcast on localdevice with min and max
+  # end
 
 end

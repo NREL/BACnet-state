@@ -1,0 +1,1 @@
+Clone bacnet-state in same parent directory as BACnet repo and run with `jruby discover_devices.rb -dev en0 -l config/logging.properties -f config/example_filter.json -databus false -m 10 -M 2000`
