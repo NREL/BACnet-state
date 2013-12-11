@@ -9,6 +9,8 @@ class Broadcaster
     @next_broadcast_min = @min
     @broadcast_step = broadcast_step
     @broadcast_interval = broadcast_interval_in_secs
+    # set eventhandler on localdevice to manage sensors reporting in
+    @local_device.getEventHandler().addListener(NewDeviceHandler.new);
   end
 
   def run
