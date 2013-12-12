@@ -11,4 +11,3 @@ KnownDevice.all.each do |kd|
   # does not save timeout
   executorPool.execute(DeviceOidLookup.new(kd, local_device))
 end
-# executorPool.invokeAll(partitions, 10000, TimeUnit::SECONDS)
