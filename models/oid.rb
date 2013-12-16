@@ -6,7 +6,7 @@ class Oid
   field :instance_number, type: Integer
   field :object_type_int, type: Integer
   field :object_type_display, type: String
-  field :polling_enabled, type: Boolean, default: false
+  field :poll_interval_seconds, type: Integer, default: -1 #off by default
   field :discovered_heartbeat, type: DateTime
   field :poll_heartbeat, type: DateTime
 
@@ -32,7 +32,11 @@ class Oid
 
   def get_object_identifier
   	ob_type = com.serotonin.bacnet4j.type.enumerated.ObjectType.new(object_type_int)
-  	oid = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,oid_id)
+  	com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,instance_number)
   end
 
+  def update_poll_interval i 
+    self.poll_interval_seconds = i
+    save
+  end
 end

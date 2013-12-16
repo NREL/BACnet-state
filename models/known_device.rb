@@ -1,9 +1,4 @@
-# require 'mongoid'
-# require 'java'
 require 'yaml'
-# require '../../../src/main/ruby/oid.rb'
-
-# Mongoid.load!("../../../src/main/ruby/mongoid.yml", :development)
 
 class KnownDevice 
   include Mongoid::Document
@@ -20,19 +15,33 @@ class KnownDevice
   field :segmentation_value, type: Integer 
   field :vendor_id, type: Integer
 
+  # loaded from getExtendedDeviceInformation
+  field :name, type: String
+  field :protocol_version, type: Integer
+  field :protocol_revision, type: Integer
+
   index({ :instance_number => 1 }, :unique => true)
 
   @remote_device = nil
 
-  has_many :oids
+  has_many :oids, :dependent => :destroy
+
+  @@local_device = nil
+
+  def self.set_local_device local_device
+    @@local_device = local_device
+  end
 
   # create or update Mongo 
   def self.discovered rd
+    # look up additional properties
+    # assumes that @@local_device has been set.
+    @@local_device.getExtendedDeviceInformation rd
     kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first
     # TODO if the device is already known, do we want to look for any changes?
     if kd.nil?
       kd = KnownDevice.new(:instance_number => rd.getInstanceNumber)
-      kd.set_fields(rd)
+      kd.set_fields rd
     end 
     kd.discovered_heartbeat = Time.now
     kd.save
@@ -46,7 +55,7 @@ class KnownDevice
     end
   end
 
-  # init the remote device if it isn't already
+  # init the remote device if necessary
   def get_remote_device
     if @remote_device.nil?
       init_remote_device
@@ -54,14 +63,8 @@ class KnownDevice
     @remote_device
   end
 
-  # def load_properties local_device
-  #   puts "loading properties for #{instance_number}"
-  #   read_in_device_oids_and_base_properties local_device
-  # end
-  
-
   # called by static discover method if mongo doesn't already know this device
-  def set_fields rd 
+  def set_fields rd
     require 'base64'
     # assigning these props without "self." prefix doesn't work
     address = rd.getAddress
@@ -77,6 +80,9 @@ class KnownDevice
     self.max_apdu_length_accepted = rd.getMaxAPDULengthAccepted
     self.vendor_id = rd.getVendorId
     self.segmentation_value = rd.getSegmentationSupported.intValue
+    self.name = rd.getName 
+    self.protocol_version = rd.getProtocolVersion.intValue
+    self.protocol_revision = rd.getProtocolRevision.intValue
   end
 
   def poll_oids local_device, writers
@@ -96,24 +102,9 @@ private
     @remote_device.setVendorId(vendor_id)
     seg = com.serotonin.bacnet4j.type.enumerated.Segmentation.new(segmentation_value)
     @remote_device.setSegmentationSupported(seg)
+    @remote_device.setName(name)
+    @remote_device.setProtocolVersion(com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(protocol_version))
+    @remote_device.setProtocolRevision(com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(protocol_revision))
   end
-
-  # returns oids available to poll for remote_device
-  # def read_in_device_oids_and_base_properties local_device
-    
-  #   # oids = p.getOids(self.get_remote_device)
-  #   # l = Java::JavaUtil::ArrayList.new
-  #   # oids.each do |oid|
-  #   #   l.add(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oid.getObjectType, oid.getInstanceNumber))
-  #   #   # l.add(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oid.getObjectType, oid.getInstanceNumber)
-  #   #   # l.add(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oid.getObjectType, oid.getInstanceNumber)
-  #   # end
-  #   # test = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oids.first.getObjectType,oids.first.getInstanceNumber)
-
-
-  #   # oids is a List<ObjectIdentifier> that must be passed to getProperties
-  #   props = p.getProperties(get_remote_device,oids)
-
-  # end
 
 end

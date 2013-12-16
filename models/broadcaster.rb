@@ -1,7 +1,7 @@
-java_import 'java.lang.Runnable'
+# java_import 'java.lang.Runnable'
 class Broadcaster
-  include Runnable
-  
+  include java.lang.Runnable
+
   def initialize(min_id, max_id, local_device, broadcast_step = 1000, broadcast_interval_in_secs = 1)
     @min = min_id
     @max = max_id
@@ -13,6 +13,7 @@ class Broadcaster
     @local_device.getEventHandler().addListener(NewDeviceHandler.new);
   end
 
+  # each run sends a whois over a shifting subinterval of the fulls scan range 
   def run
     if @next_broadcast_min > @max 
       puts "cancelling broadcast"
