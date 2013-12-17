@@ -1,9 +1,9 @@
 require 'config/initialize.rb'
 # TODO replace executor managed by bacnet instance
-executorPool = Executors.newScheduledThreadPool(1)
 
 config = gov.nrel.bacnet.consumer.BACnet.parseOptions(ARGV)
 bacnet = gov.nrel.bacnet.consumer.BACnet.new(config)
+executorPool = bacnet.getPollingSchedSvc
 local_device = bacnet.getLocalDevice
 kd = KnownDevice.where(:instance_number => 9800).first
 remote_device = kd.get_remote_device
