@@ -11,9 +11,11 @@ class Oid
   field :poll_heartbeat, type: DateTime
 
   # object instance number is unique within device
-  index({ :instance_number => 1, :known_device_id => 1 }, :unique => true)
+  index({ :instance_number => 1, :known_device_id => 1, :object_type_int => 1 }, :unique => true)
 
   belongs_to :known_device
+
+  @object_identifier = nil
 
   def self.discover known_device, o 
     begin
@@ -31,12 +33,10 @@ class Oid
   end
 
   def get_object_identifier
-  	ob_type = com.serotonin.bacnet4j.type.enumerated.ObjectType.new(object_type_int)
-  	com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,instance_number)
-  end
-
-  def update_poll_interval i 
-    self.poll_interval_seconds = i
-    save
+    if @object_identifier.nil?
+  	 ob_type = com.serotonin.bacnet4j.type.enumerated.ObjectType.new(object_type_int)
+  	 @object_identifier = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,instance_number)
+    end
+    @object_identifier
   end
 end

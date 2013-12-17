@@ -9,6 +9,7 @@ class KnownDevice
   field :poll_heartbeat, type: DateTime
   field :port, type: Integer
   field :ip_base64, type: String #byte array ?!
+  field :ip_display, type: String #for visual inspection
   field :network_number, type: Integer
   field :network_address, type: String
   field :max_apdu_length_accepted, type: Integer
@@ -20,13 +21,16 @@ class KnownDevice
   field :protocol_version, type: Integer
   field :protocol_revision, type: Integer
 
+  #random offset for polling, used to stagger network requests
+  field :poll_delay, type: Integer, default: 0 
+
   index({ :instance_number => 1 }, :unique => true)
 
-  @remote_device = nil
-
   has_many :oids, :dependent => :destroy
+  BACNET_PREFIX = "bacnet" 
 
   @@local_device = nil
+  @remote_device = nil
 
   def self.set_local_device local_device
     @@local_device = local_device
@@ -71,6 +75,7 @@ class KnownDevice
     if address.present?
       self.port = address.getPort 
       self.ip_base64 = Base64.encode64(String.from_java_bytes(address.getIpBytes))
+      self.ip_display = address.toIpPortString
     end
     network = rd.getNetwork 
     if network.present?
@@ -83,6 +88,43 @@ class KnownDevice
     self.name = rd.getName 
     self.protocol_version = rd.getProtocolVersion.intValue
     self.protocol_revision = rd.getProtocolRevision.intValue
+  end
+
+  def apply_oid_filters filters
+    oids.each do |oid|
+      i = filters.getPollingInterval(get_remote_device, oid.get_object_identifier)
+      oid.poll_interval_seconds = i
+      oid.save
+    end
+  end
+
+  def get_device_for_writing
+    description = name
+    space_i = description.index " " 
+    uscore_i = description.index "_"
+    site = (description =~ /^NWTC/) ? "NWTC" : "STM"
+    ""
+    description = description.to_s #may come through as nil
+    if description =~ /^(CP|FTU|1ST)/
+      bldg = "RSF" 
+    elsif description =~ /^Garage/
+      bldg = "Garage"
+    elsif space_i and uscore_i and (space_i < uscore_i)
+      bldg = description.split(" ").first
+    else
+      bldg = description.split("_").first
+    end
+
+    device_id = self::BACNET_PREFIX+instance_number
+
+    dev.setDeviceId(device_id);
+    dev.setDeviceDescription(name);
+    dev.setOwner("NREL")
+    dev.setSite(site)
+    dev.setBldg(bldg)
+    dev.setEndUse("unknown")
+    dev.setProtocol("BACNet")
+    dev.setAddress(ip_display) if ip_display
   end
 
   def poll_oids local_device, writers
