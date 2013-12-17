@@ -54,9 +54,16 @@ class KnownDevice
   def discover_oids local_device
     p = gov.nrel.bacnet.consumer.PropertyLoader.new(local_device)
     oids = p.getOids(self.get_remote_device)
+    extra_props = p.getProperties(self.get_remote_device, oids)
     oids.each do |oid|
-      Oid.discover(self, oid)
+      Oid.discover(self, oid, extra_props)
     end
+  end
+
+  # register databus stream for each oid with a polling interval > -1 (aka any oid we poll)
+  def register_oids_with_databus sender
+    pollable_oids = oids.where(:poll_interval_seconds.gt => -1)
+    sender.postNewStream(oid.create_stream, get_device_for_writing, "bacnet", 0)
   end
 
   # init the remote device if necessary
@@ -99,6 +106,7 @@ class KnownDevice
   end
 
   def get_device_for_writing
+    dev = gov.nrel.bacnet.consumer.beans.Device.new
     description = name
     space_i = description.index " " 
     uscore_i = description.index "_"

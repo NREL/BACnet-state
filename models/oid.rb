@@ -6,6 +6,8 @@ class Oid
   field :instance_number, type: Integer
   field :object_type_int, type: Integer
   field :object_type_display, type: String
+  field :object_name, type: String
+  field :units, type: String
   field :poll_interval_seconds, type: Integer, default: -1 #off by default
   field :discovered_heartbeat, type: DateTime
   field :poll_heartbeat, type: DateTime
@@ -17,15 +19,18 @@ class Oid
 
   @object_identifier = nil
 
-  def self.discover known_device, o 
+  def self.discover known_device, o, extra_props
     begin
       oid = known_device.oids.where(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber).first
       if oid.present?
         oid.discovered_heartbeat = Time.now
         oid.save
       else
-        # TODO any other meta to save?
-        oid = known_device.oids.create!(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber, :object_type_display => o.getObjectType.toString, :discovered_heartbeat => Time.now)
+        type_display = o.getObjectType.toString.gsub(/\/\/s/,"")
+        o_name = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.objectName))
+        o_units = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.units))
+
+        oid = known_device.oids.create!(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber, :object_type_display => type_display, :object_name => o_name, :units => o_units, :discovered_heartbeat => Time.now)
       end
     rescue Exception => e
       LoggerSingleton.logger.error "\n\nerror discovering oid #{oid.inspect}.  Error: #{e.to_s}: #{e.backtrace.join("\n")}"
@@ -38,5 +43,25 @@ class Oid
   	 @object_identifier = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,instance_number)
     end
     @object_identifier
+  end
+
+  def get_stream_for_writing
+    str = package gov.nrel.bacnet.consumer.beans.Stream.new
+
+    #       Map<ObjKey, Encodable> properties, Device dev, List<Stream> streams) {
+    # Encodable objectName = properties.get(new ObjKey(oid, PropertyIdentifier.objectName));
+    # Encodable units = properties.get(new ObjKey(oid, PropertyIdentifier.units));
+
+    str.setTableName(form_databus_table_name)
+    str.setStreamDescription(object_name)
+    str.setUnits(units)
+    str.setDevice(known_device.instance_number)
+    str.setStreamType(object_type_display)
+    str.setStreamId(instance_number)
+    
+  end
+
+  def form_databus_table_name
+    known_device.instance_number+object_type+instance_number;
   end
 end
