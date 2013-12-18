@@ -21,20 +21,24 @@ class Oid
 
   def self.discover known_device, o, extra_props
     begin
-      oid = known_device.oids.where(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber).first
-      if oid.present?
-        oid.discovered_heartbeat = Time.now
-        oid.save
-      else
-        type_display = o.getObjectType.toString.gsub(/\/\/s/,"")
-        o_name = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.objectName))
-        o_units = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.units))
-
-        oid = known_device.oids.create!(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber, :object_type_display => type_display, :object_name => o_name, :units => o_units, :discovered_heartbeat => Time.now)
-      end
+      oid = known_device.oids.where(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber).first || known_device.oids.new
+      oid.set_fields(o, extra_props)
+      oid.discovered_heartbeat = Time.now
+      oid.save!
     rescue Exception => e
       LoggerSingleton.logger.error "\n\nerror discovering oid #{oid.inspect}.  Error: #{e.to_s}: #{e.backtrace.join("\n")}"
     end
+  end
+
+  def set_fields o, extra_props
+    type_display = o.getObjectType.toString.gsub(/\/\/s/,"")
+    o_name = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.objectName))
+    o_units = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.units))
+    self.object_type_int = o.getObjectType.intValue
+    self.instance_number = o.getInstanceNumber 
+    self.object_type_display = type_display
+    self.object_name = o_name 
+    self.units = o_units
   end
 
   def get_object_identifier

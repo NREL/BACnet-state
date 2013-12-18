@@ -41,12 +41,8 @@ class KnownDevice
     # look up additional properties
     # assumes that @@local_device has been set.
     @@local_device.getExtendedDeviceInformation rd
-    kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first
-    # TODO if the device is already known, do we want to look for any changes?
-    if kd.nil?
-      kd = KnownDevice.new(:instance_number => rd.getInstanceNumber)
-      kd.set_fields rd
-    end 
+    kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first || KnownDevice.new(:instance_number => rd.getInstanceNumber) 
+    kd.set_fields rd
     kd.discovered_heartbeat = Time.now
     kd.save
   end
@@ -143,7 +139,6 @@ private
   # initialize remote device and related java objects
   def init_remote_device 
     require 'base64'
-    LoggerSingleton.logger.debug("initializing remote device with id #{instance_number}")
     ip = Base64.decode64(ip_base64).to_java_bytes
     address = com.serotonin.bacnet4j.type.constructed.Address.new(ip, port)
     network = (network_number.present?) ? com.serotonin.bacnet4j.Network.new(network_number, network_address) : nil
