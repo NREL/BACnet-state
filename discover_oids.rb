@@ -7,9 +7,10 @@ executorPool = bacnet.getOurExec
 local_device = bacnet.getLocalDevice
 filters = bacnet.getFilters
 writer = bacnet.getDatabusDataWriter
+sender = (writer.nil?) ? nil : writer.getSender
 puts "writer: #{writer.class}"
 
 
 KnownDevice.all.each do |kd|
-  executorPool.execute(DeviceOidLookup.new(kd, local_device, filters, writer))
+  executorPool.execute(DeviceOidLookup.new(kd, local_device, filters, sender))
 end

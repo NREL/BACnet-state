@@ -9,6 +9,7 @@ our_exec = bacnet.getOurExec
 scheduler = our_exec.getScheduledSvc
 filters = bacnet.getFilters
 writer = bacnet.getDatabusDataWriter
+sender = (writer.nil?) ? nil : writer.getSender
 
 # intialize a discoverer, which coordinates one complete broadcast over interval (min,max)
 discoverer = Discoverer.new(config.getMinId, config.getMaxId, local_device, scheduler)
@@ -22,7 +23,7 @@ puts "scheduling device discovery scans to run once a day at midnight.  First sc
 scheduler.scheduleAtFixedRate(discoverer, seconds_to_midnight, 60*60*24, TimeUnit::SECONDS)
 
 ##### OID LOOKUPS ######
-oid_discoverer = OidDiscoverer.new(local_device, filters, scheduler, writer)
+oid_discoverer = OidDiscoverer.new(local_device, filters, scheduler, sender)
 puts "scheduling OID lookup to run once a day 2 hours after midnight"
 scheduler.scheduleAtFixedRate(oid_discoverer, seconds_to_midnight + 60*60*2, 60*60*24, TimeUnit::SECONDS)
 
