@@ -11,5 +11,5 @@ puts "writer: #{writer.class}"
 
 
 KnownDevice.all.each do |kd|
-  executorPool.execute(DeviceOidLookup.new(kd, local_device, filters))
+  executorPool.execute(DeviceOidLookup.new(kd, local_device, filters, writer))
 end

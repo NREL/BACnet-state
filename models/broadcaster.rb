@@ -1,14 +1,12 @@
-# java_import 'java.lang.Runnable'
 class Broadcaster
   include java.lang.Runnable
 
-  def initialize(min_id, max_id, local_device, broadcast_step = 1000, broadcast_interval_in_secs = 1)
+  def initialize(min_id, max_id, local_device, broadcast_step = 1000)
     @min = min_id
     @max = max_id
     @local_device = local_device
     @next_broadcast_min = @min
     @broadcast_step = broadcast_step
-    @broadcast_interval = broadcast_interval_in_secs
     # set eventhandler on localdevice to manage sensors reporting in
     @local_device.getEventHandler().addListener(NewDeviceHandler.new);
   end
@@ -29,7 +27,7 @@ class Broadcaster
   end
 
   def broadcastWhoIs min, max
-    whois = com.serotonin.bacnet4j.service.unconfirmed.WhoIsRequest.new(com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(min), com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(max))
+    whois = WhoIsRequest.new(com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(min), com.serotonin.bacnet4j.type.primitive.UnsignedInteger.new(max))
     @local_device.sendBroadcast(whois);
   end
 end
