@@ -58,8 +58,10 @@ class KnownDevice
 
   # register databus stream for each oid with a polling interval > -1 (aka any oid we poll)
   def register_oids_with_databus sender
-    pollable_oids = oids.where(:poll_interval_seconds.gt => -1)
-    sender.postNewStream(oid.create_stream, get_device_for_writing, "bacnet", 0)
+    pollable_oids = oids.where(:poll_interval_seconds.gt => -1).entries
+    pollable_oids.each do |oid|
+      sender.postNewStream(oid.get_stream_for_writing, get_device_for_writing, "bacnet", "0")
+    end
   end
 
   # init the remote device if necessary
@@ -119,7 +121,7 @@ class KnownDevice
       bldg = description.split("_").first
     end
 
-    device_id = self::BACNET_PREFIX+instance_number
+    device_id = "#{KnownDevice::BACNET_PREFIX}#{instance_number}"
 
     dev.setDeviceId(device_id);
     dev.setDeviceDescription(name);

@@ -31,7 +31,7 @@ class Oid
   end
 
   def set_fields o, extra_props
-    type_display = o.getObjectType.toString.gsub(/\/\/s/,"")
+    type_display = o.getObjectType.toString.gsub(/ /,"")
     o_name = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.objectName))
     o_units = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.units))
     self.object_type_int = o.getObjectType.intValue
@@ -50,22 +50,18 @@ class Oid
   end
 
   def get_stream_for_writing
-    str = package gov.nrel.bacnet.consumer.beans.Stream.new
-
-    #       Map<ObjKey, Encodable> properties, Device dev, List<Stream> streams) {
-    # Encodable objectName = properties.get(new ObjKey(oid, PropertyIdentifier.objectName));
-    # Encodable units = properties.get(new ObjKey(oid, PropertyIdentifier.units));
-
+    str = gov.nrel.bacnet.consumer.beans.Stream.new
+    puts name = form_databus_table_name
     str.setTableName(form_databus_table_name)
     str.setStreamDescription(object_name)
     str.setUnits(units)
-    str.setDevice(known_device.instance_number)
+    str.setDevice(known_device.instance_number.to_s)
     str.setStreamType(object_type_display)
-    str.setStreamId(instance_number)
-    
+    str.setStreamId(instance_number.to_s)
+    return str
   end
 
   def form_databus_table_name
-    known_device.instance_number+object_type+instance_number;
+    "#{KnownDevice::BACNET_PREFIX}#{known_device.instance_number}#{object_type_display}#{instance_number.to_s}"
   end
 end
