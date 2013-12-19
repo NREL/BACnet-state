@@ -51,7 +51,6 @@ class Oid
 
   def get_stream_for_writing
     str = gov.nrel.bacnet.consumer.beans.Stream.new
-    puts name = form_databus_table_name
     str.setTableName(form_databus_table_name)
     str.setStreamDescription(object_name)
     str.setUnits(units)

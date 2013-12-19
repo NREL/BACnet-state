@@ -8,7 +8,7 @@ class DeviceOidLookup
   end
   def run
     begin
-      puts "starting to process #{@device.instance_number}"
+      # puts "starting to process #{@device.instance_number}"
       start = Time.now.to_i
       @device.discover_oids @local_device
       @device.apply_oid_filters @filters
