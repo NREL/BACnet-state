@@ -31,7 +31,7 @@ class Oid
   end
 
   def set_fields o, extra_props
-    type_display = o.getObjectType.toString.gsub(/ /,"")
+    type_display = o.getObjectType.toString.gsub(/[ |-]/,"")
     o_name = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.objectName))
     o_units = extra_props.get(gov.nrel.bacnet.consumer.beans.ObjKey.new(o, com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier.units))
     self.object_type_int = o.getObjectType.intValue
