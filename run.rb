@@ -24,8 +24,10 @@ scheduler.scheduleAtFixedRate(discoverer, seconds_to_midnight, 60*60*24, TimeUni
 
 ##### OID LOOKUPS ######
 oid_discoverer = OidDiscoverer.new(local_device, filters, scheduler, sender)
-puts "scheduling OID lookup to run once a day 2 hours after midnight"
-scheduler.scheduleAtFixedRate(oid_discoverer, seconds_to_midnight + 60*60*2, 60*60*24, TimeUnit::SECONDS)
+puts "scheduling OID lookup to every 10 minutes"
+scheduler.scheduleAtFixedRate(oid_discoverer, 0, 10*60, TimeUnit::SECONDS)
+# puts "scheduling OID lookup to run once a day 2 hours after midnight"
+# scheduler.scheduleAtFixedRate(oid_discoverer, seconds_to_midnight + 60*60*2, 60*60*24, TimeUnit::SECONDS)
 
 ##### POLLING #####
 puts "kicking off polling"
@@ -44,3 +46,7 @@ KnownDevice.all.each do |kd|
     scheduler.scheduleAtFixedRate(pollone, delay.getDelay, delay.getInterval, TimeUnit::SECONDS)
   end
 end
+
+# schedule polling for any new devices every 30 minutes
+new_polling_scheduler = NewDevicePollScheduler.new(local_device, our_exec, writers)
+scheduler.scheduleAtFixedRate(new_polling_scheduler, 0, 30*60, TimeUnit::SECONDS)
