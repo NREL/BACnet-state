@@ -30,15 +30,17 @@ scheduler.scheduleAtFixedRate(oid_discoverer, seconds_to_midnight + 60*60*2, 60*
 ##### POLLING #####
 puts "kicking off polling"
 KnownDevice.all.each do |kd|
-  remote_device = kd.get_remote_device
-  polltask = PollDeviceTask.new(remote_device,local_device,bacnet.getDefaultWriters)
-  oids = kd.oids.where(:poll_interval_seconds.gt => -1).entries
-  oids.each do |o| 
-    polltask.addInterval(o.get_object_identifier, o.poll_interval_seconds) 
+  if kd.complete?
+    remote_device = kd.get_remote_device
+    polltask = PollDeviceTask.new(remote_device,local_device,bacnet.getDefaultWriters)
+    oids = kd.oids.where(:poll_interval_seconds.gt => -1).entries
+    oids.each do |o| 
+      polltask.addInterval(o.get_object_identifier, o.poll_interval_seconds) 
+    end
+    polltask.setCachedOids(oids.map{|o| o.get_object_identifier})
+    delay = polltask.init()
+    puts "initializing polling of device #{kd.instance_number} with #{oids.count} pollable oids. interval = #{delay.getInterval} and initial delay = #{delay.getDelay}"
+    pollone = SchedulablePoll.new(polltask, our_exec, kd)
+    scheduler.scheduleAtFixedRate(pollone, delay.getDelay, delay.getInterval, TimeUnit::SECONDS)
   end
-  polltask.setCachedOids(oids.map{|o| o.get_object_identifier})
-  delay = polltask.init()
-  puts "initializing polling of device #{kd.instance_number} with #{oids.count} pollable oids. interval = #{delay.getInterval} and initial delay = #{delay.getDelay}"
-  pollone = SchedulablePoll.new(polltask, our_exec)
-  scheduler.scheduleAtFixedRate(pollone, delay.getDelay, delay.getInterval, TimeUnit::SECONDS)
 end
