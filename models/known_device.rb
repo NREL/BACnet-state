@@ -6,7 +6,13 @@ class KnownDevice
  
   field :instance_number, type: Integer
   field :discovered_heartbeat, type: DateTime
-  field :poll_heartbeat, type: DateTime
+
+  # refresh_heartbeat and refresh_oids_heartbeat are updated on *attempted* refesh rather than success.  this is to prevent constant ping of devices that time out up often send iAm messages
+  field :refresh_heartbeat, type: DateTime #last time data for this device was updated (includes getExtendedDeviceInformation network call)
+  field :refresh_oids_heartbeat, type: DateTime #last time oids list was retrieved for device
+
+  # this does not record success but should tell us whether polling is running.
+  field :attempted_poll_heartbeat, type: DateTime
   field :port, type: Integer
   field :ip_base64, type: String #byte array ?!
   field :ip_display, type: String #for visual inspection
@@ -38,16 +44,20 @@ class KnownDevice
 
   # create or update Mongo 
   def self.discovered rd
-    # look up additional properties
-    # assumes that @@local_device has been set.
-    @@local_device.getExtendedDeviceInformation rd
     kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first || KnownDevice.new(:instance_number => rd.getInstanceNumber) 
-    kd.set_fields rd
     kd.discovered_heartbeat = Time.now
-    kd.save
+    # run the set fields to refresh mongo once a week
+    if kd.refresh_heartbeat.nil? or kd.refresh_heartbeat < (Time.now - 1.day)
+      kd.set_fields rd
+    end
+     
   end
 
   def discover_oids local_device
+    # record every attempt to refresh oids
+    self.refresh_oids_heartbeat = Time.now
+    self.save 
+
     p = gov.nrel.bacnet.consumer.PropertyLoader.new(local_device)
     oids = p.getOids(self.get_remote_device)
     extra_props = p.getProperties(self.get_remote_device, oids)
@@ -59,6 +69,7 @@ class KnownDevice
   # register databus stream for each oid with a polling interval > -1 (aka any oid we poll)
   def register_oids_with_databus sender
     pollable_oids = oids.where(:poll_interval_seconds.gt => -1).entries
+
     pollable_oids.each do |oid|
       sender.postNewStream(oid.get_stream_for_writing, get_device_for_writing, "bacnet", "0")
     end
@@ -72,10 +83,15 @@ class KnownDevice
     @remote_device
   end
 
-  # called by static discover method if mongo doesn't already know this device
+  # we want to be able to save devices that respond, even if they later time out on the getextendeddevice request 
+  # this allows us to track when we last refreshed them.  for oid lookup and polling purposes, we will ignore devices that are not complete
+  def complete?
+    # protocol version is set by getExtendedDevice request and should be good indicator of whether that ran
+    !protocol_version.nil?
+  end
+
   def set_fields rd
     require 'base64'
-    # assigning these props without "self." prefix doesn't work
     address = rd.getAddress
     if address.present?
       self.port = address.getPort 
@@ -90,9 +106,15 @@ class KnownDevice
     self.max_apdu_length_accepted = rd.getMaxAPDULengthAccepted
     self.vendor_id = rd.getVendorId
     self.segmentation_value = rd.getSegmentationSupported.intValue
+    self.refresh_heartbeat = Time.now
+    self.save
+    # These are set from extended device info which may time out (so we update refresh and save first)
+    # assumes @@local_device has been set
+    @@local_device.getExtendedDeviceInformation rd
     self.name = rd.getName 
     self.protocol_version = rd.getProtocolVersion.intValue
     self.protocol_revision = rd.getProtocolRevision.intValue
+
   end
 
   def apply_oid_filters filters
@@ -131,10 +153,6 @@ class KnownDevice
     dev.setEndUse("unknown")
     dev.setProtocol("BACNet")
     dev.setAddress(ip_display) if ip_display
-  end
-
-  def poll_oids local_device, writers
-    
   end
 
 private
