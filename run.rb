@@ -48,5 +48,5 @@ KnownDevice.all.each do |kd|
 end
 
 # schedule polling for any new devices every 30 minutes
-new_polling_scheduler = NewDevicePollScheduler.new(local_device, our_exec, writers)
+new_polling_scheduler = NewDevicePollScheduler.new(local_device, our_exec, bacnet.getDefaultWriters)
 scheduler.scheduleAtFixedRate(new_polling_scheduler, 0, 30*60, TimeUnit::SECONDS)
