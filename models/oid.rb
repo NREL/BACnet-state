@@ -52,10 +52,10 @@ class Oid
   def get_stream_for_writing
     str = gov.nrel.bacnet.consumer.beans.Stream.new
     str.setTableName(form_databus_table_name)
-    str.setStreamDescription(object_name)
-    str.setUnits(units)
+    str.setStreamDescription(object_name.to_s)
+    str.setUnits(units.to_s)
     str.setDevice(known_device.instance_number.to_s)
-    str.setStreamType(object_type_display)
+    str.setStreamType(object_type_display.to_s)
     str.setStreamId(instance_number.to_s)
     return str
   end
