@@ -26,7 +26,7 @@ class Oid
       oid.discovered_heartbeat = Time.now
       oid.save!
     rescue Exception => e
-      LoggerSingleton.logger.error "\n\nerror discovering oid #{oid.inspect}.  Error: #{e.to_s}: #{e.backtrace.join("\n")}"
+      LoggerSingleton.logger.error "#{DateTime.now} error discovering oid #{oid.inspect}.  Error: #{e.to_s}: #{e.backtrace.join("\n")}"
     end
   end
 

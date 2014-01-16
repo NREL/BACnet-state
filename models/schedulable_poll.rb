@@ -9,6 +9,7 @@ class SchedulablePoll
 
   def run
     begin
+      LoggerSingleton.logger.info "\n\n#{DateTime.now} Starting polling for device #{@known_device.instance_number}"
       # recode that we are about to attempt polling
       @known_device.attempted_poll_heartbeat = Time.now
       @known_device.save
@@ -18,7 +19,7 @@ class SchedulablePoll
       @exec.execute(@polltask)
     # rescue from exception so scheduled polling is not terminated
     rescue Exception => e
-      LoggerSingleton.logger.error "\n\nerror running polling task: #{e.to_s}: #{e.backtrace.join("\n")}"
+      LoggerSingleton.logger.error "\n\n#{DateTime.now} error running polling task: #{e.to_s}: #{e.backtrace.join("\n")}"
     end
   end
 end

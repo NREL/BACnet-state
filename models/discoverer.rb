@@ -13,7 +13,7 @@ class Discoverer
   # by scheduling staggered whois broadcasts over subintervals.
   def run
     broadcaster = Broadcaster.new(@min, @max, @local_device, @step)
-    puts "starting broadcast of range #{@min} to #{@max} in steps of #{@step} at interval of #{@interval_in_secs}"
+    LoggerSingleton.logger.info "#{DateTime.now} starting broadcast of range #{@min} to #{@max} in steps of #{@step} at interval of #{@interval_in_secs}"
     @sched_svc.scheduleAtFixedRate(broadcaster, @delay, @interval_in_secs, TimeUnit::SECONDS)
   end
 
