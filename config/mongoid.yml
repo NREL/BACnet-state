@@ -1,9 +1,7 @@
 development:
   sessions:
     default:
-      database: bacnet_development
+      database: bacnet_state
       hosts:
         - localhost:27017
-      username: bacnet_development
-      password: bacnet
       
