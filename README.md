@@ -28,7 +28,7 @@ Installation
 - Optionally adjust settings in the config/filter.json and config/logging.properties files.
 
 Execution
-==========
+--------------
 
 The following sample scripts are provided:
 
@@ -46,12 +46,12 @@ The following sample scripts are provided:
 `jruby run.rb -databus false -dev en1 -m 0 -M 40000`
 
 Options
-==========
+---------------
 
 The BACnet-state application exposes the same options as NREL's [BACnet Scraper](https://github.com/NREL/bacnet). Details available with that project.   Note that you must either set the databus option to false or provide databus credentials.  The -dev option is required.
 
 Caveats
-==========
+---------------
 - While our scripts use small threadpools, the code is fundamentally not threadsafe.  Core BACnet functionality is provided by the [BACnet4j](http://sourceforge.net/projects/bacnet4j/) (included with NREL's BACnet scraper).  All requests on the BACnet network must be made via a single instance of the LocalDevice, which is bound to a network device.  This object is not threadsafe.  In our experience, increasing multithreading results in bogus "Device Timeout" messages, but no data integrity issues.
 
 
