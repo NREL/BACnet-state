@@ -24,11 +24,11 @@ class NewDeviceHandler < com.serotonin.bacnet4j.event.DefaultDeviceEventListener
     if name =~ /Yaskawa Node/
       return
     end
-    puts "received #{name} #{remote_device.getInstanceNumber}"
+    LoggerSingleton.logger.info "#{DateTime.now} received #{name} #{remote_device.getInstanceNumber}"
     begin
       KnownDevice.discovered(remote_device)
     rescue Exception => e
-      LoggerSingleton.logger.error "\n\nerror processing iamrecieved for device #{remote_device.getInstanceNumber}: #{e.to_s}"
+      LoggerSingleton.logger.error "#{DateTime.now} error processing iamrecieved for device #{remote_device.getInstanceNumber}: #{e.to_s}"
     end
   end  
 end
