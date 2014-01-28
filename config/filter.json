@@ -2,7 +2,7 @@
     "filters": [
         {
             "deviceId": ".*",
-            "objectType": "Vendor Specific.*",
+            "objectType": "Vendor Specific*",
             "objectId": ".*",
             "interval": "-1"
         },
