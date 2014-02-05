@@ -18,6 +18,7 @@ require 'config/initialize.rb'
 require 'active_support' #for time utilities
 
 config = BACnet.parseOptions(ARGV)
+puts "ARGV = #{ARGV}"
 bacnet = BACnet.new(config)
 local_device = bacnet.getLocalDevice
 KnownDevice.set_local_device(local_device)
@@ -50,16 +51,12 @@ LoggerSingleton.logger.info "kicking off polling"
 KnownDevice.all.each do |kd|
   if kd.complete?
     remote_device = kd.get_remote_device
-    polltask = PollDeviceTask.new(remote_device,local_device,bacnet.getDefaultWriters,our_exec.getRecorderSvc)
     oids = kd.oids.where(:poll_interval_seconds.gt => -1).entries
-    oids.each do |o| 
-      polltask.addInterval(o.get_object_identifier, o.poll_interval_seconds) 
-    end
-    polltask.setCachedOids(oids.map{|o| o.get_object_identifier})
-    delay = polltask.init()
-    LoggerSingleton.logger.info "initializing polling of device #{kd.instance_number} with #{oids.count} pollable oids. interval = #{delay.getInterval} and initial delay = #{delay.getDelay}"
+    polltask = Poll.new(remote_device,local_device,bacnet.getDefaultWriters,our_exec.getRecorderSvc, oids)
+
+    LoggerSingleton.logger.info "initializing polling of device #{kd.instance_number} with #{oids.count} pollable oids. interval = #{polltask.poll_rate} and initial delay = #{polltask.poll_delay}"
     pollone = SchedulablePoll.new(polltask, our_exec, kd)
-    scheduler.scheduleAtFixedRate(pollone, delay.getDelay, delay.getInterval, TimeUnit::SECONDS)
+    scheduler.scheduleAtFixedRate(pollone, polltask.poll_delay, polltask.poll_rate, TimeUnit::SECONDS)
   end
 end
 
