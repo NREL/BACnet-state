@@ -1,14 +1,18 @@
 Stateful BACnet Scraper
 ===============
 
-This application works with NREL's [BACnet](https://github.com/NREL/BACnet) library to provide stateful and modular control of 
+This application works with the [Building Agent BACnet](https://github.com/NREL/BACnet) library to provide stateful and modular control of 
 - Device discovery
 - Device OID lookup
 - Device polling/data scraping
 
 Discovered devices and oids are persisted to a Mongo database, decoupling discovery from the polling process.
 
-Project funded by NREL's Commercial Building LDRD Project for Building Agent.
+Project funded by NREL's Commercial Building LDRD Project for Building Agent.  Read more about Building Agent:
+
+* [NREL-Developed Software Tackles Building Efficiency and Offers Cost Savings](http://www.nrel.gov/news/press/2013/5301.html)
+* [Progress on Enabling an Interactive Conversation Between Commercial Building Occupants and Their Building To Improve Comfort and Energy Efficiency](http://www.nrel.gov/buildings/pdfs/55197.pdf)
+* [Building Agent Software: Occupancy Feedback for Building Controls](http://techportal.eere.energy.gov/technology.do/techID=1068)
 
 -------------------------------
 
@@ -18,7 +22,7 @@ Installation
 - JRuby must be installed.  We run the application using JRuby 1.7.4 and cannot confirm compatibility with other versions of JRuby.
 - Mongo must be installed and running.
 - Clone this repo and run `bundle install`.
-- Clone and build NREL's [BACnet Scraper](https://github.com/NREL/bacnet). The BACnet library should be installed at the same level as BACnet-state:
+- Clone and build the [Building Agent BACnet Scraper](https://github.com/NREL/bacnet). The BACnet library should be installed at the same level as BACnet-state:
 ````````sh
 /my-project/bacnet
 /my-project/bacnet-state
@@ -48,10 +52,10 @@ The following sample scripts are provided:
 Options
 ---------------
 
-The BACnet-state application exposes the same options as NREL's [BACnet Scraper](https://github.com/NREL/bacnet). Details available with that project.   Note that you must either set the databus option to false or provide databus credentials.  The -dev option is required.
+The BACnet-state application exposes the same options as the [Building Agent BACnet Scraper](https://github.com/NREL/bacnet). Details available with that project.   Note that you must either set the databus option to false or provide databus credentials.  The -dev option is required.
 
 Caveats
 ---------------
-- While our scripts use small threadpools, the code is fundamentally not threadsafe.  Core BACnet functionality is provided by the [BACnet4j](http://sourceforge.net/projects/bacnet4j/) (included with NREL's BACnet scraper).  All requests on the BACnet network must be made via a single instance of the LocalDevice, which is bound to a network device.  This object is not threadsafe.  In our experience, increasing multithreading results in bogus "Device Timeout" messages, but no data integrity issues.
+- While our scripts use small threadpools, the code is fundamentally not threadsafe.  Core BACnet functionality is provided by the [BACnet4j](http://sourceforge.net/projects/bacnet4j/) (included with the Building Agent BACnet scraper).  All requests on the BACnet network must be made via a single instance of the LocalDevice, which is bound to a network device.  This object is not threadsafe.  In our experience, increasing multithreading results in bogus "Device Timeout" messages, but no data integrity issues.
 
 
