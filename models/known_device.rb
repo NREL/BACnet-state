@@ -133,11 +133,18 @@ class KnownDevice
 
   end
 
-  def apply_oid_filters filters
+  def apply_oid_filters 
     oids.each do |oid|
-      i = filters.getPollingInterval(get_remote_device, oid.get_object_identifier)
-      oid.poll_interval_seconds = i
-      oid.save
+      Filter.all.sort(:priority.desc).each do |f|
+        # if you found a match, save and skip to next oid
+        if f.match(oid)
+          # puts "setting poll interval for oid #{oid.object_name} to #{f.interval} because of match with filter #{f.inspect}"
+          oid.poll_interval_seconds = f.interval
+          oid.save
+          break
+        end
+      end
+      # if there were no matches, we won't change anything for now
     end
   end
 

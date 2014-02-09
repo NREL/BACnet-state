@@ -16,9 +16,8 @@
 
 class OidDiscoverer 
   include java.lang.Runnable
-  def initialize(local_device, filters, svc, databus_sender = false)
+  def initialize(local_device, svc, databus_sender = false)
     @local_device = local_device
-    @filters = filters
     @sched_svc = svc
     @sender = databus_sender
   end
@@ -33,14 +32,14 @@ class OidDiscoverer
       # if kd.complete?
         delay = rand(60 * 9)
         LoggerSingleton.logger.info "#{DateTime.now} scheduling oid lookup for device #{kd.instance_number} with delay of #{delay}"
-        @sched_svc.schedule(DeviceOidLookup.new(kd, @local_device, @filters, @sender), delay, TimeUnit::SECONDS)
+        @sched_svc.schedule(DeviceOidLookup.new(kd, @local_device, @sender), delay, TimeUnit::SECONDS)
       # end
     end
     stale_devices.each do |kd|
       # if kd.complete?
         delay = rand(60 * 9)
         LoggerSingleton.logger.info "#{DateTime.now} scheduling oid lookup for device #{kd.instance_number} with delay of #{delay}"
-        @sched_svc.schedule(DeviceOidLookup.new(kd, @local_device, @filters, @sender), delay, TimeUnit::SECONDS)
+        @sched_svc.schedule(DeviceOidLookup.new(kd, @local_device, @sender), delay, TimeUnit::SECONDS)
       # end
     end
   end

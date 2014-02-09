@@ -23,7 +23,6 @@ local_device = bacnet.getLocalDevice
 KnownDevice.set_local_device(local_device)
 our_exec = bacnet.getOurExec
 scheduler = our_exec.getScheduledSvc
-filters = bacnet.getFilters
 writer = bacnet.getDatabusDataWriter
 sender = (writer.nil?) ? nil : writer.getSender
 
@@ -39,7 +38,7 @@ LoggerSingleton.logger.info "scheduling device discovery scans to run once a day
 scheduler.scheduleAtFixedRate(discoverer, seconds_to_midnight, 60*60*24, TimeUnit::SECONDS)
 
 ##### OID LOOKUPS ######
-oid_discoverer = OidDiscoverer.new(local_device, filters, scheduler, sender)
+oid_discoverer = OidDiscoverer.new(local_device, scheduler, sender)
 LoggerSingleton.logger.info "scheduling OID lookup to every 10 minutes"
 scheduler.scheduleAtFixedRate(oid_discoverer, 0, 10*60, TimeUnit::SECONDS)
 # puts "scheduling OID lookup to run once a day 2 hours after midnight"
