@@ -32,27 +32,10 @@ end
 Filter.create(:priority => 0, :interval => 7200)
 
 KnownDevice.all.each do |kd|
-# kd = KnownDevice.where(:instance_number => 100).first
+
   kd.apply_oid_filters
 end
 
-# db.oids.count()
-# 142670
-# 142670
-# > db.oids.find({poll_interval_seconds: 60}).count()
-# 21208
-# 17549
-# > db.oids.find({poll_interval_seconds: 300}).count()
-# 37636
-# 31158
-# > db.oids.find({poll_interval_seconds: -1}).count()
-# 29336
-# 88275
-# db.oids.find({poll_interval_seconds: 7200}).count()
-# 54490
-# 0
-# db.oids.find({poll_interval_seconds: 7200, object_type_display: /VendorSpecific/}).count()
-# 54490
 
 
 
