@@ -61,12 +61,15 @@ class KnownDevice
   # create or update Mongo 
   def self.discovered rd
     kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first || KnownDevice.new(:instance_number => rd.getInstanceNumber) 
+
+    LoggerSingleton.logger.info "Discovered device : #{rd.getInstanceNumber} #{kd.refresh_heartbeat}"
+
     kd.discovered_heartbeat = Time.now
     # run the set fields to refresh mongo once a week
     if kd.refresh_heartbeat.nil? or kd.refresh_heartbeat < (Time.now - 1.day)
       kd.set_fields rd
     end
-     
+
   end
 
   def discover_oids local_device
@@ -103,7 +106,7 @@ class KnownDevice
   # this allows us to track when we last refreshed them.  for oid lookup and polling purposes, we will ignore devices that are not complete
   def complete?
     # protocol version is set by getExtendedDevice request and should be good indicator of whether that ran
-    !protocol_version.nil?
+    !protocol_version.nil? || !name.nil?
   end
 
   def set_fields rd
@@ -124,12 +127,14 @@ class KnownDevice
     self.segmentation_value = rd.getSegmentationSupported.intValue
     self.refresh_heartbeat = Time.now
     self.save
+
     # These are set from extended device info which may time out (so we update refresh and save first)
     # assumes @@local_device has been set
     @@local_device.getExtendedDeviceInformation rd
     self.name = rd.getName 
     self.protocol_version = rd.getProtocolVersion.intValue
     self.protocol_revision = rd.getProtocolRevision.intValue
+    self.update # make sure just added info is saved to DB too
 
   end
 

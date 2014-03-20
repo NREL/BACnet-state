@@ -24,15 +24,15 @@ class DeviceOidLookup
   def run
     begin
       if @device.complete?
-        # puts "starting to process #{@device.instance_number}"
-        start = Time.now.to_i
+        LoggerSingleton.logger.info "#{DateTime.now} starting to process #{@device.instance_number}"
+        start = Time.now.to_f
         @device.discover_oids @local_device
         @device.apply_oid_filters 
         if @databus_sender.present?
           # TODO enable this once we test with one device.  may post a new databus stream
           @device.register_oids_with_databus(@databus_sender)
         end
-        LoggerSingleton.logger.info "#{DateTime.now} finished processing #{@device.instance_number} in #{Time.now.to_i - start} milliseconds"
+        LoggerSingleton.logger.info "#{DateTime.now} finished processing #{@device.instance_number} in #{Time.now.to_f - start} seconds. #{@device.oids.size()} oids found"
       else
         LoggerSingleton.logger.info "#{DateTime.now} faking oid lookup for incomplete known device #{@device.instance_number}"
         @device.refresh_oids_heartbeat = DateTime.now
