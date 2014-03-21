@@ -16,28 +16,42 @@
 
 class OidDiscoverer 
   include java.lang.Runnable
-  def initialize(local_device, svc, databus_sender = false)
+  def initialize(local_device, svc, num_devices_to_scan, time_to_stale, scanning_time, databus_sender = false)
     @local_device = local_device
     @sched_svc = svc
     @sender = databus_sender
+    @num_devices_to_scan = num_devices_to_scan
+    @time_to_stale = time_to_stale
+    @scanning_time = scanning_time
   end
 
   # schedule fresh lookup of Oids for all known devices 
-  # distribute start time randomly over 9 minutes (code runs every 10 minutes)
+  # distribute start time randomly over scanning_time
   def run
-    new_devices = KnownDevice.where(:refresh_oids_heartbeat => nil).limit(10).entries
-    stale_devices = KnownDevice.where(:refresh_oids_heartbeat.lt => (Time.now - 1.day)).limit(10).entries
-    LoggerSingleton.logger.info "#{DateTime.now} kicking oid discovery.  total new device count = #{KnownDevice.where(:refresh_oids_heartbeat => nil).count} and total stale device count = #{KnownDevice.where(:refresh_oids_heartbeat.lt => (Time.now - 1.day)).count}"
+    LoggerSingleton.logger.info "Starting run of OidDiscoverer"
+
+    # make sure we grab the oldest devices first for priority scanning
+    new_devices = KnownDevice.where(:refresh_oids_heartbeat => nil).asc(:discovered_heartbeat).limit(@num_devices_to_scan).entries
+                                                                    
+    LoggerSingleton.logger.info "#{new_devices.count} new devices found"
+
+    # treat "num_devices_to_scan" as a total number, and prefer new_devices. This way we optimize and 
+    # are always scanning as many as we can handle
+    stale_devices = KnownDevice.where(:refresh_oids_heartbeat.lt => (Time.now - @time_to_stale)).asc(:refresh_oids_heartbeat).limit(@num_devices_to_scan - new_devices.size).entries
+
+    LoggerSingleton.logger.info "#{DateTime.now} kicking oid discovery.  total new device count = #{KnownDevice.where(:refresh_oids_heartbeat => nil).count} and total stale device count = #{KnownDevice.where(:refresh_oids_heartbeat.lt => (Time.now - @time_to_stale)).count}"
+    # note: rand is a uniform distribution provided by the mersenne twister which is thread specific
+    # but this code runs in the main thread so the distribution should stay uniform 
     new_devices.each do |kd|
       # if kd.complete?
-        delay = rand(60 * 9)
+        delay = rand(@scanning_time.seconds)
         LoggerSingleton.logger.info "#{DateTime.now} scheduling oid lookup for device #{kd.instance_number} with delay of #{delay}"
         @sched_svc.schedule(DeviceOidLookup.new(kd, @local_device, @sender), delay, TimeUnit::SECONDS)
       # end
     end
     stale_devices.each do |kd|
       # if kd.complete?
-        delay = rand(60 * 9)
+        delay = rand(@scanning_time.seconds)
         LoggerSingleton.logger.info "#{DateTime.now} scheduling oid lookup for device #{kd.instance_number} with delay of #{delay}"
         @sched_svc.schedule(DeviceOidLookup.new(kd, @local_device, @sender), delay, TimeUnit::SECONDS)
       # end

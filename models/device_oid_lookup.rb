@@ -36,7 +36,7 @@ class DeviceOidLookup
       else
         LoggerSingleton.logger.info "#{DateTime.now} faking oid lookup for incomplete known device #{@device.instance_number}"
         @device.refresh_oids_heartbeat = DateTime.now
-        @device.save
+        @device.update
       end
     rescue Exception => e 
       LoggerSingleton.logger.error "#{DateTime.now} oid scan for device #{@device.instance_number} failed with error #{e.to_s}"

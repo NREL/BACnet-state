@@ -28,7 +28,7 @@ class SchedulablePoll
       LoggerSingleton.logger.info "\n\n#{DateTime.now} Starting polling for device #{@known_device.instance_number}"
       # recode that we are about to attempt polling
       @known_device.attempted_poll_heartbeat = Time.now
-      @known_device.save
+      @known_device.update
       # schedule on fixed threadpool with queue management
       # need to update mongo on successful completion
       # may also want to notify mongo of failed execution

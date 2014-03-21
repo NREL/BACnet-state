@@ -38,13 +38,16 @@ class Oid
 
   def self.discover known_device, o, extra_props
     begin
+      id = "#{o.getObjectType.intValue.to_s}:#{o.getInstanceNumber.to_s}:#{known_device._id.to_s}"
+      #oid = known_device.oids.where(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber).first || known_device.oids.new
+      oid = known_device.oids.find_or_initialize_by(:_id => id)
       # by generating our own _id and using upsert;
-      # and skipping the find / save approach our performance increases by ~3x
-      oid = known_device.oids.new
-      oid._id = "#{o.getObjectType.intValue.to_s}:#{o.getInstanceNumber.to_s}:#{known_device._id.to_s}"
+      # and skipping the find / save approach our performance increases by ~6x
+      oid._id = id
       oid.set_fields(o, extra_props)
       oid.discovered_heartbeat = Time.now
       oid.upsert
+      #oid.save!
     rescue Exception => e
       LoggerSingleton.logger.error "#{DateTime.now} error discovering oid #{oid.inspect}.  Error: #{e.to_s}: #{e.backtrace.join("\n")}"
     end

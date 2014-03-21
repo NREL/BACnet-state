@@ -60,28 +60,42 @@ class KnownDevice
 
   # create or update Mongo 
   def self.discovered rd
-    kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first || KnownDevice.new(:instance_number => rd.getInstanceNumber) 
+    kd = KnownDevice.find_or_initialize_by(:instance_number => rd.getInstanceNumber)
 
     LoggerSingleton.logger.info "Discovered device : #{rd.getInstanceNumber} #{kd.refresh_heartbeat}"
 
     kd.discovered_heartbeat = Time.now
+    kd.upsert
+
     # run the set fields to refresh mongo once a week
     if kd.refresh_heartbeat.nil? or kd.refresh_heartbeat < (Time.now - 1.day)
       kd.set_fields rd
     end
-
   end
 
   def discover_oids local_device
     # record every attempt to refresh oids
     self.refresh_oids_heartbeat = Time.now
-    self.save 
+    self.update
 
+    id = self.get_remote_device.getObjectIdentifier
     p = gov.nrel.bacnet.consumer.PropertyLoader.new(local_device)
     oids = p.getOids(self.get_remote_device)
-    extra_props = p.getProperties(self.get_remote_device, oids)
+    LoggerSingleton.logger.info "#{DateTime.now} Discovered #{oids.size} oids on #{self.get_remote_device.getInstanceNumber}"
+
+    begin
+      extra_props = p.getProperties(self.get_remote_device, oids)
+      LoggerSingleton.logger.info "#{DateTime.now} Discovered #{extra_props.size} properties on #{self.get_remote_device.getInstanceNumber}"
+    rescue Exception => e
+      LoggerSingleton.logger.error "#{DateTime.now} exception while discovering properties on  #{self.get_remote_device.getInstanceNumber}"
+      raise e
+    end
     oids.each do |oid|
-      Oid.discover(self, oid, extra_props)
+      begin
+        Oid.discover(self, oid, extra_props)
+      rescue Exception => e 
+        LoggerSingleton.logger.error "#{DateTime.now} oid discovery for device #{@device.instance_number} failed with error #{e.to_s} oid #{oid.to_s}. Continuing with next oid"
+      end
     end
   end
 
@@ -126,7 +140,7 @@ class KnownDevice
     self.vendor_id = rd.getVendorId
     self.segmentation_value = rd.getSegmentationSupported.intValue
     self.refresh_heartbeat = Time.now
-    self.save
+    self.update
 
     # These are set from extended device info which may time out (so we update refresh and save first)
     # assumes @@local_device has been set
@@ -135,7 +149,6 @@ class KnownDevice
     self.protocol_version = rd.getProtocolVersion.intValue
     self.protocol_revision = rd.getProtocolRevision.intValue
     self.update # make sure just added info is saved to DB too
-
   end
 
   def apply_oid_filters 
@@ -145,7 +158,7 @@ class KnownDevice
         if f.match(oid)
           # puts "setting poll interval for oid #{oid.object_name} to #{f.interval} because of match with filter #{f.inspect}"
           oid.poll_interval_seconds = f.interval
-          oid.save
+          oid.update
           break
         end
       end
