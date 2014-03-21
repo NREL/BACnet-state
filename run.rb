@@ -31,7 +31,7 @@ cur_time = Time.now.in_time_zone('Mountain Time (US & Canada)')
 midnight = cur_time.tomorrow.at_midnight
 time_to_midnight = midnight - cur_time
 
-aggressive_scanning = true
+aggressive_scanning = false
 
 if !aggressive_scanning
   # 'conservative' daily scanning of network
