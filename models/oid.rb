@@ -19,6 +19,7 @@
 class Oid
   include Mongoid::Document
   include Mongoid::Timestamps
+  field :_id, type: String
   field :instance_number, type: Integer
   field :object_type_int, type: Integer
   field :object_type_display, type: String
@@ -37,10 +38,16 @@ class Oid
 
   def self.discover known_device, o, extra_props
     begin
-      oid = known_device.oids.where(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber).first || known_device.oids.new
+      id = "#{o.getObjectType.intValue.to_s}:#{o.getInstanceNumber.to_s}:#{known_device._id.to_s}"
+      #oid = known_device.oids.where(:object_type_int => o.getObjectType.intValue, :instance_number => o.getInstanceNumber).first || known_device.oids.new
+      oid = known_device.oids.find_or_initialize_by(:_id => id)
+      # by generating our own _id and using upsert;
+      # and skipping the find / save approach our performance increases by ~6x
+      oid._id = id
       oid.set_fields(o, extra_props)
       oid.discovered_heartbeat = Time.now
-      oid.save!
+      oid.upsert
+      #oid.save!
     rescue Exception => e
       LoggerSingleton.logger.error "#{DateTime.now} error discovering oid #{oid.inspect}.  Error: #{e.to_s}: #{e.backtrace.join("\n")}"
     end
@@ -59,8 +66,8 @@ class Oid
 
   def get_object_identifier
     if @object_identifier.nil?
-  	 ob_type = com.serotonin.bacnet4j.type.enumerated.ObjectType.new(object_type_int)
-  	 @object_identifier = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,instance_number)
+      ob_type = com.serotonin.bacnet4j.type.enumerated.ObjectType.new(object_type_int)
+      @object_identifier = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(ob_type,instance_number)
     end
     @object_identifier
   end

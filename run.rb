@@ -26,21 +26,44 @@ scheduler = our_exec.getScheduledSvc
 writer = bacnet.getDatabusDataWriter
 sender = (writer.nil?) ? nil : writer.getSender
 
+#calc seconds to midnight (UTC or local)
+cur_time = Time.now.in_time_zone('Mountain Time (US & Canada)')
+midnight = cur_time.tomorrow.at_midnight
+time_to_midnight = midnight - cur_time
+
+aggressive_scanning = false
+
+if !aggressive_scanning
+  # 'conservative' daily scanning of network
+  num_devices_to_scan = 20
+  time_to_device_stale = 1.day
+  device_scanning_time = 1.minute
+  time_between_oid_scans = 10.minute
+  delay_to_start_scanning = time_to_midnight
+  time_between_scans = 1.day
+  new_device_poll_time = 30.minute
+else
+  # 'aggressive' for testing
+  num_devices_to_scan = 20
+  time_to_device_stale = 10.minute
+  device_scanning_time = 2.minute
+  time_between_oid_scans = 4.minute
+  delay_to_start_scanning = 0
+  time_between_scans = 10.minute
+  new_device_poll_time = 10.minute
+end
+
 # intialize a discoverer, which coordinates one complete broadcast over interval (min,max)
 discoverer = Discoverer.new(config.getMinId, config.getMaxId, local_device, scheduler)
 
 ##### DEVICE SCANNING ########
-#calc seconds to midnight (UTC or local)
-cur_time = Time.now.in_time_zone('Mountain Time (US & Canada)')
-midnight = cur_time.tomorrow.at_midnight
-seconds_to_midnight = midnight.to_i - cur_time.to_i
-LoggerSingleton.logger.info "scheduling device discovery scans to run once a day at midnight.  First scan in #{seconds_to_midnight} seconds"
-scheduler.scheduleAtFixedRate(discoverer, seconds_to_midnight, 60*60*24, TimeUnit::SECONDS)
+LoggerSingleton.logger.info "scheduling device discovery scans to run every #{time_between_scans.to_s} seconds.  First scan at #{(cur_time + delay_to_start_scanning).to_s}"
+scheduler.scheduleAtFixedRate(discoverer, delay_to_start_scanning.to_i, time_between_scans.to_i, TimeUnit::SECONDS)
 
 ##### OID LOOKUPS ######
-oid_discoverer = OidDiscoverer.new(local_device, scheduler, sender)
-LoggerSingleton.logger.info "scheduling OID lookup to every 10 minutes"
-scheduler.scheduleAtFixedRate(oid_discoverer, 0, 10*60, TimeUnit::SECONDS)
+oid_discoverer = OidDiscoverer.new(local_device, scheduler, num_devices_to_scan, time_to_device_stale, device_scanning_time, sender)
+LoggerSingleton.logger.info "scheduling OID lookup to every #{time_between_oid_scans.to_s} seconds."
+scheduler.scheduleAtFixedRate(oid_discoverer, 30, time_between_oid_scans.to_i, TimeUnit::SECONDS)
 # puts "scheduling OID lookup to run once a day 2 hours after midnight"
 # scheduler.scheduleAtFixedRate(oid_discoverer, seconds_to_midnight + 60*60*2, 60*60*24, TimeUnit::SECONDS)
 
@@ -64,6 +87,5 @@ KnownDevice.all.each do |kd|
   end
 end
 
-# schedule polling for any new devices every 30 minutes
 new_polling_scheduler = NewDevicePollScheduler.new(local_device, our_exec, bacnet.getDefaultWriters)
-scheduler.scheduleAtFixedRate(new_polling_scheduler, 0, 30*60, TimeUnit::SECONDS)
+scheduler.scheduleAtFixedRate(new_polling_scheduler, 60, new_device_poll_time.to_i, TimeUnit::SECONDS)
