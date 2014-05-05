@@ -1,7 +1,8 @@
 development:
   sessions:
     default:
-      database: bacnet_state
+    # database: bacnet_state
+      database: bacnet_development
       hosts:
         - localhost:27017
       
