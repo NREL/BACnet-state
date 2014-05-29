@@ -168,32 +168,38 @@ class KnownDevice
 
   def get_device_for_writing
     dev = gov.nrel.bacnet.consumer.beans.Device.new
-    description = name
+    description = name.to_s #may be null
     space_i = description.index " " 
     uscore_i = description.index "_"
     site = (description =~ /^NWTC/) ? "NWTC" : "STM"
     ""
-    description = description.to_s #may come through as nil
     if description =~ /^(CP|FTU|1ST)/
       bldg = "RSF" 
     elsif description =~ /^Garage/
       bldg = "Garage"
-    elsif space_i and uscore_i and (space_i < uscore_i)
-      bldg = description.split(" ").first
+    # elsif description =~ /^STF/
+    #   bldg = "STF"
+    elsif space_i or (space_i and uscore_i and (space_i < uscore_i))
+      tmp = description.split(" ")
+      bldg = tmp.shift
+      description = tmp.join(" ")
     else
-      bldg = description.split("_").first
+      tmp = description.split("_")
+      bldg = tmp.shift
+      description = tmp.join(" ")
     end
 
     device_id = "#{KnownDevice::BACNET_PREFIX}#{instance_number}"
 
     dev.setDeviceId(device_id);
-    dev.setDeviceDescription(name);
+    dev.setDeviceDescription(description);
     dev.setOwner("NREL")
     dev.setSite(site)
     dev.setBldg(bldg)
     dev.setEndUse("unknown")
     dev.setProtocol("BACNet")
     dev.setAddress(ip_display) if ip_display
+    dev
   end
 
 private
