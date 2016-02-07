@@ -21,6 +21,7 @@ class LoggerSingleton
   def self.logger
     if @@logger.nil?
       @@logger = Logger.new("logs/ruby_log.log")
+      @@logger.level = Logger::WARN
       logdev = @@logger.instance_variable_get :@logdev
       logdev.dev.autoclose = false
     end
