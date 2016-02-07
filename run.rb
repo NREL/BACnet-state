@@ -72,9 +72,10 @@ LoggerSingleton.logger.info "kicking off polling"
 KnownDevice.all.each do |kd|
   if kd.complete?
     remote_device = kd.get_remote_device
-    polltask = PollDeviceTask.new(remote_device,local_device,bacnet.getDefaultWriters,our_exec.getRecorderSvc)
-    oids = kd.oids.where(:poll_interval_seconds.gt => -1).entries
+
+    oids = kd.oids.where(:poll_interval_seconds.gt => -1, :stream.ne => nil).entries
     if oids.count > 1 # todo  change to > 0 when java bug polling devices with one oid is fixed
+      polltask = PollDeviceTask.new(remote_device,local_device,bacnet.getDefaultWriters,our_exec.getRecorderSvc)
       oids.each do |o| 
         polltask.addInterval(o.get_object_identifier, o.poll_interval_seconds) 
       end
