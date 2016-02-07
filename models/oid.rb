@@ -28,6 +28,8 @@ class Oid
   field :poll_interval_seconds, type: Integer, default: -1 #off by default
   field :discovered_heartbeat, type: DateTime
   field :poll_heartbeat, type: DateTime
+  field :stream_error, type: String, default: nil #error with stream to push data to
+  field :stream, type: String, default: nil
 
   # object instance number is unique within device
   index({ :instance_number => 1, :known_device_id => 1, :object_type_int => 1 }, :unique => true)

@@ -101,10 +101,18 @@ class KnownDevice
 
   # register databus stream for each oid with a polling interval > -1 (aka any oid we poll)
   def register_oids_with_databus sender
-    pollable_oids = oids.where(:poll_interval_seconds.gt => -1).entries
+    pollable_oids = oids.where(:poll_interval_seconds.gt => -1, :oid.stream => nil).entries
 
     pollable_oids.each do |oid|
-      sender.postNewStream(oid.get_stream_for_writing, get_device_for_writing, "bacnet", "0")
+      begin
+        sender.postNewStream(oid.get_stream_for_writing, get_device_for_writing, "bacnet", "0")
+        oid.stream = oid.get_stream_for_writing
+        oid.stream_error = nil
+        oid.save
+      rescue
+        oid.stream_error = true
+        oid.save
+      end
     end
   end
 
