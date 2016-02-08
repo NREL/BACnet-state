@@ -106,7 +106,7 @@ class KnownDevice
     pollable_oids.each do |oid|
       begin
         sender.postNewStream(oid.get_stream_for_writing, get_device_for_writing, "bacnet", "0")
-        oid.stream = oid.get_stream_for_writing
+        oid.stream = oid.form_databus_table_name
         oid.stream_error = nil
         oid.save
       rescue

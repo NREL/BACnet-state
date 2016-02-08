@@ -30,6 +30,7 @@ class Oid
   field :poll_heartbeat, type: DateTime
   field :stream_error, type: String, default: nil #error with stream to push data to
   field :stream, type: String, default: nil
+  field :retired, type: Boolean, default: false
 
   # object instance number is unique within device
   index({ :instance_number => 1, :known_device_id => 1, :object_type_int => 1 }, :unique => true)
@@ -48,6 +49,7 @@ class Oid
       oid._id = id
       oid.set_fields(o, extra_props)
       oid.discovered_heartbeat = Time.now
+      oid.retired = false
       oid.upsert
       #oid.save!
     rescue Exception => e
