@@ -31,16 +31,18 @@ class NewDevicePollScheduler
       new_devices.each do |kd| 
         if kd.complete?
           remote_device = kd.get_remote_device
-          polltask = PollDeviceTask.new(remote_device,@local_device,@writers,@exec.getRecorderSvc)
-          oids = kd.oids.where(:poll_interval_seconds.gt => -1).entries
-          oids.each do |o| 
-            polltask.addInterval(o.get_object_identifier, o.poll_interval_seconds) 
+          oids = kd.oids.where(:poll_interval_seconds.gt => -1, :stream.ne => nil, :retired => false).entries
+          if oids.count > 1 #todo fix once java bug for polling 1 device is resolved
+            polltask = PollDeviceTask.new(remote_device,@local_device,@writers,@exec.getRecorderSvc)
+            oids.each do |o| 
+              polltask.addInterval(o.get_object_identifier, o.poll_interval_seconds) 
+            end
+            polltask.setCachedOids(oids.map{|o| o.get_object_identifier})
+            delay = polltask.init()
+            LoggerSingleton.logger.info "#{DateTime.now} initializing polling of recently discovered device #{kd.instance_number} with #{oids.count} pollable oids. interval = #{delay.getInterval} and initial delay = #{delay.getDelay}"
+            pollone = SchedulablePoll.new(polltask, @exec, kd)
+            @exec.getScheduledSvc.scheduleAtFixedRate(pollone, delay.getDelay, delay.getInterval, TimeUnit::SECONDS)
           end
-          polltask.setCachedOids(oids.map{|o| o.get_object_identifier})
-          delay = polltask.init()
-          LoggerSingleton.logger.info "#{DateTime.now} initializing polling of recently discovered device #{kd.instance_number} with #{oids.count} pollable oids. interval = #{delay.getInterval} and initial delay = #{delay.getDelay}"
-          pollone = SchedulablePoll.new(polltask, @exec, kd)
-          @exec.getScheduledSvc.scheduleAtFixedRate(pollone, delay.getDelay, delay.getInterval, TimeUnit::SECONDS)
         end
       end
     rescue Exception => e

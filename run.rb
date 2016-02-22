@@ -73,6 +73,7 @@ KnownDevice.all.each do |kd|
   if kd.complete?
     remote_device = kd.get_remote_device
 
+    # todo make this a scope used here and in new_device_poll_scheduler oid.pollable streams
     oids = kd.oids.where(:poll_interval_seconds.gt => -1, :stream.ne => nil, :retired => false).entries
     if oids.count > 1 # todo  change to > 0 when java bug polling devices with one oid is fixed
       polltask = PollDeviceTask.new(remote_device,local_device,bacnet.getDefaultWriters,our_exec.getRecorderSvc)
